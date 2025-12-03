@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs').promises;
 const Patient = require('../models/Patient');
+const PatientEditRequest = require('../models/PatientEditRequest');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -142,6 +143,25 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
 
         // Update fields (except qrToken and hospital)
         const { qrToken, hospital, ...updateData } = req.body;
+
+        // If HOSPITAL_ADMIN, create edit request instead of updating directly
+        if (req.userRole === 'HOSPITAL_ADMIN') {
+            const editRequest = new PatientEditRequest({
+                patient: patient._id,
+                hospital: req.userHospital,
+                requestedChanges: updateData,
+                status: 'PENDING'
+            });
+            await editRequest.save();
+
+            return res.json({
+                success: true,
+                message: 'Update request sent to Admin for approval',
+                requestPending: true
+            });
+        }
+
+        // If SUPER_ADMIN, update directly
         Object.assign(patient, updateData);
         await patient.save();
 

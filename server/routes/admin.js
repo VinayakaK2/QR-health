@@ -1,122 +1,79 @@
 const express = require('express');
-const Hospital = require('../models/Hospital');
 const Patient = require('../models/Patient');
-const Report = require('../models/Report');
-const { authMiddleware, requireSuperAdmin } = require('../middleware/auth');
+const PatientEditRequest = require('../models/PatientEditRequest');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/admin/hospitals
-// @desc    Get all hospitals (SUPER_ADMIN only)
-// @access  Protected (SUPER_ADMIN)
-router.get('/hospitals', authMiddleware, requireSuperAdmin, async (req, res, next) => {
-    try {
-        const hospitals = await Hospital.find()
-            .populate('adminUser', 'name email')
-            .sort({ createdAt: -1 });
+// Middleware to ensure SUPER_ADMIN
+const ensureSuperAdmin = (req, res, next) => {
+    if (req.userRole !== 'SUPER_ADMIN') {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. Super Admin only.'
+        });
+    }
+    next();
+};
 
-        // Get patient counts for each hospital
-        const hospitalsWithCounts = await Promise.all(
-            hospitals.map(async (hospital) => {
-                const patientCount = await Patient.countDocuments({ hospital: hospital._id });
-                return {
-                    ...hospital.toObject(),
-                    patientCount
-                };
-            })
-        );
+// @route   GET /api/admin/requests
+// @desc    Get all pending edit requests
+// @access  Protected (Super Admin)
+router.get('/requests', authMiddleware, ensureSuperAdmin, async (req, res, next) => {
+    try {
+        const requests = await PatientEditRequest.find({ status: 'PENDING' })
+            .populate('patient') // Populate full patient details
+            .populate('hospital', 'name')
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            count: hospitalsWithCounts.length,
-            hospitals: hospitalsWithCounts
+            count: requests.length,
+            requests
         });
     } catch (error) {
         next(error);
     }
 });
 
-// @route   GET /api/admin/patients
-// @desc    Get all patients from all hospitals (SUPER_ADMIN only)
-// @access  Protected (SUPER_ADMIN)
-router.get('/patients', authMiddleware, requireSuperAdmin, async (req, res, next) => {
+// @route   GET /api/admin/requests/count
+// @desc    Get count of pending edit requests
+// @access  Protected (Super Admin)
+router.get('/requests/count', authMiddleware, ensureSuperAdmin, async (req, res, next) => {
     try {
-        const patients = await Patient.find()
-            .populate('hospital', 'name email')
-            .sort({ createdAt: -1 });
-
+        const count = await PatientEditRequest.countDocuments({ status: 'PENDING' });
         res.json({
             success: true,
-            count: patients.length,
-            patients
+            count
         });
     } catch (error) {
         next(error);
     }
 });
 
-// @route   GET /api/admin/hospitals/:id/patients
-// @desc    Get all patients from a specific hospital (SUPER_ADMIN only)
-// @access  Protected (SUPER_ADMIN)
-router.get('/hospitals/:id/patients', authMiddleware, requireSuperAdmin, async (req, res, next) => {
+// @route   POST /api/admin/requests/:id/approve
+// @desc    Approve an edit request
+// @access  Protected (Super Admin)
+router.post('/requests/:id/approve', authMiddleware, ensureSuperAdmin, async (req, res, next) => {
     try {
-        const hospital = await Hospital.findById(req.params.id);
+        const request = await PatientEditRequest.findById(req.params.id);
 
-        if (!hospital) {
+        if (!request) {
             return res.status(404).json({
                 success: false,
-                message: 'Hospital not found'
+                message: 'Request not found'
             });
         }
 
-        const patients = await Patient.find({ hospital: req.params.id })
-            .populate('hospital', 'name email')
-            .sort({ createdAt: -1 });
+        if (request.status !== 'PENDING') {
+            return res.status(400).json({
+                success: false,
+                message: 'Request is already processed'
+            });
+        }
 
-        res.json({
-            success: true,
-            hospital: {
-                _id: hospital._id,
-                name: hospital.name,
-                email: hospital.email
-            },
-            count: patients.length,
-            patients
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// @route   GET /api/admin/reports
-// @desc    Get all reports from all hospitals (SUPER_ADMIN only)
-// @access  Protected (SUPER_ADMIN)
-router.get('/reports', authMiddleware, requireSuperAdmin, async (req, res, next) => {
-    try {
-        const reports = await Report.find()
-            .populate('patient', 'fullName bloodGroup riskLevel')
-            .populate('hospital', 'name')
-            .populate('createdBy', 'name')
-            .sort({ reportDate: -1 });
-
-        res.json({
-            success: true,
-            count: reports.length,
-            reports
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// @route   GET /api/admin/patients/:patientId/reports
-// @desc    Get all reports for a specific patient (SUPER_ADMIN only)
-// @access  Protected (SUPER_ADMIN)
-router.get('/patients/:patientId/reports', authMiddleware, requireSuperAdmin, async (req, res, next) => {
-    try {
-        const { patientId } = req.params;
-
-        const patient = await Patient.findById(patientId);
+        // Apply changes to patient
+        const patient = await Patient.findById(request.patient);
         if (!patient) {
             return res.status(404).json({
                 success: false,
@@ -124,21 +81,51 @@ router.get('/patients/:patientId/reports', authMiddleware, requireSuperAdmin, as
             });
         }
 
-        const reports = await Report.find({ patient: patientId })
-            .populate('hospital', 'name email')
-            .populate('createdBy', 'name')
-            .sort({ reportDate: -1 });
+        Object.assign(patient, request.requestedChanges);
+        await patient.save();
+
+        // Update request status
+        request.status = 'APPROVED';
+        await request.save();
 
         res.json({
             success: true,
-            patient: {
-                _id: patient._id,
-                fullName: patient.fullName,
-                bloodGroup: patient.bloodGroup,
-                riskLevel: patient.riskLevel
-            },
-            count: reports.length,
-            reports
+            message: 'Request approved and patient updated',
+            patient
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// @route   POST /api/admin/requests/:id/reject
+// @desc    Reject an edit request
+// @access  Protected (Super Admin)
+router.post('/requests/:id/reject', authMiddleware, ensureSuperAdmin, async (req, res, next) => {
+    try {
+        const request = await PatientEditRequest.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
+        }
+
+        if (request.status !== 'PENDING') {
+            return res.status(400).json({
+                success: false,
+                message: 'Request is already processed'
+            });
+        }
+
+        // Update request status
+        request.status = 'REJECTED';
+        await request.save();
+
+        res.json({
+            success: true,
+            message: 'Request rejected'
         });
     } catch (error) {
         next(error);

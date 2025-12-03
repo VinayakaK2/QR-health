@@ -26,8 +26,8 @@ const OwnerDashboard = () => {
     const fetchData = async () => {
         try {
             const [hospitalsRes, patientsRes] = await Promise.all([
-                axios.get('/admin/hospitals'),
-                axios.get('/admin/patients')
+                axios.get('/hospitals'),
+                axios.get('/patients')
             ]);
 
             const hospitals = hospitalsRes.data.hospitals;

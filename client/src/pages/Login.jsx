@@ -36,6 +36,16 @@ const Login = () => {
         }
     };
 
+    const fillAdminCredentials = () => {
+        setEmail('owner@emergency.com');
+        setPassword('owner123');
+    };
+
+    const fillHospitalCredentials = () => {
+        setEmail('admin@hospital.com');
+        setPassword('admin@123');
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary/10 via-white to-secondary/10 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
@@ -103,18 +113,33 @@ const Login = () => {
                     </form>
 
                     <div className="mt-6 space-y-3">
-                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                            <p className="text-sm text-purple-800 font-medium mb-1">System Owner (SUPER_ADMIN):</p>
-                            <p className="text-xs text-purple-700">Email: owner@smartqr.com</p>
-                            <p className="text-xs text-purple-700">Password: owner123</p>
+                        <div className="text-center">
+                            <p className="text-sm text-gray-600 mb-2">
+                                Don't have an account?{' '}
+                                <Link to="/register-hospital" className="text-primary hover:text-primary-dark font-medium">
+                                    Register your hospital
+                                </Link>
+                            </p>
                         </div>
 
-                        <Link
-                            to="/register-hospital"
-                            className="block w-full text-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors font-medium"
-                        >
-                            Register Your Hospital
-                        </Link>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={fillAdminCredentials}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                            >
+                                Admin
+                            </button>
+                            <button
+                                type="button"
+                                onClick={fillHospitalCredentials}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                            >
+                                Hospital
+                            </button>
+                        </div>
+
+
                     </div>
                 </div>
 

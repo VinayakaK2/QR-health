@@ -30,12 +30,14 @@ router.post('/register', async (req, res, next) => {
         }
 
         // Check if admin email already exists
-        const existingUser = await User.findOne({ email: adminEmail });
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'User with this email already exists'
-            });
+        let adminUser = await User.findOne({ email: adminEmail });
+        if (adminUser) {
+            if (adminUser.hospital) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User is already associated with another hospital'
+                });
+            }
         }
 
         // Create hospital
@@ -49,16 +51,25 @@ router.post('/register', async (req, res, next) => {
         });
         await hospital.save();
 
-        // Create admin user for the hospital
-        const adminUser = new User({
-            name: adminName,
-            email: adminEmail,
-            password: adminPassword,
-            role: 'HOSPITAL_ADMIN',
-            hospital: hospital._id,
-            isActive: false // Will be activated when hospital is approved
-        });
-        await adminUser.save();
+        // Create or update admin user
+        if (adminUser) {
+            adminUser.name = adminName;
+            adminUser.password = adminPassword;
+            adminUser.role = 'HOSPITAL_ADMIN';
+            adminUser.hospital = hospital._id;
+            adminUser.isActive = false;
+            await adminUser.save();
+        } else {
+            adminUser = new User({
+                name: adminName,
+                email: adminEmail,
+                password: adminPassword,
+                role: 'HOSPITAL_ADMIN',
+                hospital: hospital._id,
+                isActive: false
+            });
+            await adminUser.save();
+        }
 
         // Link admin user to hospital
         hospital.adminUser = adminUser._id;

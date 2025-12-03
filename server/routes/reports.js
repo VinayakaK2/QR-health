@@ -5,8 +5,8 @@ const { authMiddleware, requireHospitalAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes require authentication and HOSPITAL_ADMIN role
-router.use(authMiddleware, requireHospitalAdmin);
+// All routes require authentication
+router.use(authMiddleware);
 
 // @route   POST /api/reports
 // @desc    Create a new report for a patient
@@ -32,11 +32,14 @@ router.post('/', async (req, res, next) => {
             });
         }
 
-        if (patient.hospital.toString() !== req.userHospital.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: 'You can only create reports for patients in your hospital'
-            });
+        // Check hospital ownership (skip for SUPER_ADMIN)
+        if (req.userRole !== 'SUPER_ADMIN') {
+            if (patient.hospital.toString() !== req.userHospital.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You can only create reports for patients in your hospital'
+                });
+            }
         }
 
         // Create report
@@ -84,11 +87,14 @@ router.get('/patient/:patientId', async (req, res, next) => {
             });
         }
 
-        if (patient.hospital.toString() !== req.userHospital.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied'
-            });
+        // Check hospital ownership (skip for SUPER_ADMIN)
+        if (req.userRole !== 'SUPER_ADMIN') {
+            if (patient.hospital.toString() !== req.userHospital.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
         }
 
         const reports = await Report.find({ patient: patientId })
@@ -121,12 +127,14 @@ router.get('/:id', async (req, res, next) => {
             });
         }
 
-        // Verify hospital ownership
-        if (report.hospital.toString() !== req.userHospital.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied'
-            });
+        // Verify hospital ownership (skip for SUPER_ADMIN)
+        if (req.userRole !== 'SUPER_ADMIN') {
+            if (report.hospital.toString() !== req.userHospital.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
         }
 
         res.json({
@@ -152,12 +160,14 @@ router.put('/:id', async (req, res, next) => {
             });
         }
 
-        // Verify hospital ownership
-        if (report.hospital.toString() !== req.userHospital.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied'
-            });
+        // Verify hospital ownership (skip for SUPER_ADMIN)
+        if (req.userRole !== 'SUPER_ADMIN') {
+            if (report.hospital.toString() !== req.userHospital.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
         }
 
         // Update allowed fields
@@ -197,12 +207,14 @@ router.delete('/:id', async (req, res, next) => {
             });
         }
 
-        // Verify hospital ownership
-        if (report.hospital.toString() !== req.userHospital.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied'
-            });
+        // Verify hospital ownership (skip for SUPER_ADMIN)
+        if (req.userRole !== 'SUPER_ADMIN') {
+            if (report.hospital.toString() !== req.userHospital.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
         }
 
         await Report.findByIdAndDelete(req.params.id);

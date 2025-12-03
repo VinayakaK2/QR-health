@@ -7,6 +7,12 @@ const patientSchema = new mongoose.Schema({
         required: [true, 'Full name is required'],
         trim: true
     },
+    email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
+    },
     age: {
         type: Number,
         required: [true, 'Age is required'],
@@ -51,6 +57,12 @@ const patientSchema = new mongoose.Schema({
             required: [true, 'Emergency contact phone is required'],
             trim: true,
             match: [/^[+]?[\d\s-()]+$/, 'Please provide a valid phone number']
+        },
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
         }
     },
     riskLevel: {

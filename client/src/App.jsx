@@ -13,6 +13,7 @@ import OwnerDashboard from './pages/OwnerDashboard';
 import OwnerHospitalList from './pages/OwnerHospitalList';
 import OwnerHospitalPatients from './pages/OwnerHospitalPatients';
 import OwnerReports from './pages/OwnerReports';
+import AdminRequests from './pages/AdminRequests';
 
 function App() {
     return (
@@ -79,6 +80,14 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <OwnerReports />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/requests"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRequests />
                             </ProtectedRoute>
                         }
                     />

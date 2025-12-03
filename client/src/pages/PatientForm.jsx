@@ -13,6 +13,7 @@ const PatientForm = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
+        email: '',
         age: '',
         gender: 'Male',
         photoUrl: '',
@@ -22,9 +23,10 @@ const PatientForm = () => {
         medications: '',
         emergencyContact: {
             name: '',
-            phone: ''
+            phone: '',
+            email: ''
         },
-        riskLevel: 'Low'
+
     });
 
     useEffect(() => {
@@ -39,6 +41,7 @@ const PatientForm = () => {
             const patient = response.data.patient;
             setFormData({
                 fullName: patient.fullName,
+                email: patient.email || '',
                 age: patient.age,
                 gender: patient.gender,
                 photoUrl: patient.photoUrl || '',
@@ -47,7 +50,7 @@ const PatientForm = () => {
                 medicalConditions: patient.medicalConditions.join(', '),
                 medications: patient.medications.join(', '),
                 emergencyContact: patient.emergencyContact,
-                riskLevel: patient.riskLevel
+                emergencyContact: patient.emergencyContact,
             });
         } catch (error) {
             toast.error('Failed to load patient data');
@@ -92,8 +95,12 @@ const PatientForm = () => {
             };
 
             if (isEditMode) {
-                await axios.put(`/patients/${id}`, submitData);
-                toast.success('Patient updated successfully');
+                const response = await axios.put(`/patients/${id}`, submitData);
+                if (response.data.requestPending) {
+                    toast.success('Update request sent to Admin for approval');
+                } else {
+                    toast.success('Patient updated successfully');
+                }
             } else {
                 await axios.post('/patients', submitData);
                 toast.success('Patient created successfully');
@@ -140,6 +147,20 @@ const PatientForm = () => {
                                                 onChange={handleChange}
                                                 className="input-field"
                                                 required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Email Address
+                                            </label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="input-field"
+                                                placeholder="patient@example.com"
                                             />
                                         </div>
 
@@ -260,22 +281,7 @@ const PatientForm = () => {
                                             />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Risk Level <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                name="riskLevel"
-                                                value={formData.riskLevel}
-                                                onChange={handleChange}
-                                                className="input-field"
-                                                required
-                                            >
-                                                <option value="Low">Low</option>
-                                                <option value="Medium">Medium</option>
-                                                <option value="High">High</option>
-                                            </select>
-                                        </div>
+
                                     </div>
                                 </div>
 
@@ -309,6 +315,20 @@ const PatientForm = () => {
                                                 className="input-field"
                                                 placeholder="+919876543210"
                                                 required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Contact Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                name="emergencyContact.email"
+                                                value={formData.emergencyContact.email}
+                                                onChange={handleChange}
+                                                className="input-field"
+                                                placeholder="emergency@example.com"
                                             />
                                         </div>
                                     </div>

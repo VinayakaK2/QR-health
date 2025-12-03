@@ -23,7 +23,7 @@ const OwnerHospitalList = () => {
     const fetchHospitals = async () => {
         try {
             // Use admin API that includes patient counts
-            const response = await axios.get('/admin/hospitals');
+            const response = await axios.get('/hospitals');
             let hospitalData = response.data.hospitals;
 
             // Apply filter if needed
@@ -103,8 +103,8 @@ const OwnerHospitalList = () => {
                             key={status || 'ALL'}
                             onClick={() => setFilter(status)}
                             className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === status
-                                    ? 'bg-primary text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                ? 'bg-primary text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             {status || 'ALL'}
