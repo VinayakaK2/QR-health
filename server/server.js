@@ -14,6 +14,7 @@ const hospitalRoutes = require('./routes/hospitals');
 const adminRoutes = require('./routes/admin');
 const reportRoutes = require('./routes/reports');
 const uploadRoutes = require('./routes/upload');
+const aiRoutes = require('./routes/ai');
 
 // Initialize express app
 const app = express();
@@ -65,6 +66,7 @@ app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

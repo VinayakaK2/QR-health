@@ -71,4 +71,33 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
     }
 });
 
+// @route   POST /api/upload/multiple
+// @desc    Upload multiple files
+// @access  Protected
+router.post('/multiple', authMiddleware, upload.array('files', 10), (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No files uploaded'
+            });
+        }
+
+        // Return array of file URLs
+        const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+
+        res.json({
+            success: true,
+            message: `${req.files.length} file(s) uploaded successfully`,
+            fileUrls,
+            count: req.files.length
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

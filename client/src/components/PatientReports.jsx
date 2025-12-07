@@ -16,7 +16,7 @@ const PatientReports = ({ patientId }) => {
     });
     const [uploading, setUploading] = useState(false);
 
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
 
     useEffect(() => {
         if (patientId) {
@@ -45,21 +45,24 @@ const PatientReports = ({ patientId }) => {
         try {
             let finalFileUrl = formData.reportFileUrl;
 
-            // 1. Upload file if one is selected
-            if (selectedFile) {
+            // 1. Upload files if any are selected
+            if (selectedFiles.length > 0) {
                 const uploadFormData = new FormData();
-                uploadFormData.append('file', selectedFile);
+                selectedFiles.forEach(file => {
+                    uploadFormData.append('files', file);
+                });
 
                 try {
-                    const uploadResponse = await axios.post('/upload', uploadFormData, {
+                    const uploadResponse = await axios.post('/upload/multiple', uploadFormData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
-                    finalFileUrl = uploadResponse.data.fileUrl;
+                    // Use first file URL as primary
+                    finalFileUrl = uploadResponse.data.fileUrls[0];
                 } catch (uploadError) {
                     console.error("Upload failed", uploadError);
                     toast.error('File upload failed');
                     setUploading(false);
-                    return; // Stop execution
+                    return;
                 }
             }
 
@@ -229,9 +232,10 @@ const PatientReports = ({ patientId }) => {
                                     <input
                                         type="file"
                                         accept="image/*,application/pdf"
+                                        multiple
                                         onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                setSelectedFile(e.target.files[0]);
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                setSelectedFiles(Array.from(e.target.files));
                                             }
                                         }}
                                         className="block w-full text-sm text-gray-500
@@ -242,13 +246,32 @@ const PatientReports = ({ patientId }) => {
                                             hover:file:bg-blue-100"
                                     />
                                 </div>
-                                {(selectedFile || formData.reportFileUrl) && (
-                                    <p className="mt-2 text-sm text-green-600 flex items-center">
-                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        {selectedFile ? `Selected: ${selectedFile.name}` : 'File attached'}
-                                    </p>
+                                {selectedFiles.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                        <p className="text-sm font-medium text-gray-700">Selected Files ({selectedFiles.length}):</p>
+                                        {selectedFiles.map((file, index) => (
+                                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="truncate max-w-xs">{file.name}</span>
+                                                    <span className="ml-2 text-xs text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 ml-2"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 

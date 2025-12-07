@@ -17,7 +17,7 @@ import OwnerReports from './pages/OwnerReports';
 import AdminRequests from './pages/AdminRequests';
 import HospitalIdCards from './pages/HospitalIdCards';
 
-import PatientDashboard from './pages/PatientDashboard';
+import PatientDashboard from './pages/PatientDashboardWithChatbot';
 
 function App() {
     return (

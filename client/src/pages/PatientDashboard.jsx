@@ -4,6 +4,7 @@ import axios from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import AIChatBot from '../components/AIChatBot';
 
 import * as htmlToImage from 'html-to-image';
 
