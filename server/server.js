@@ -5,6 +5,8 @@ const path = require('path');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const User = require('./models/User');
+const app = express();
+
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -84,6 +86,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 API: http://localhost:${PORT}/api`);
+    const host = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    console.log(`📡 API: ${host}/api`);
     console.log(`🏥 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
